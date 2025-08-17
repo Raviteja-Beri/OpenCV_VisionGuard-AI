@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionGuard AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .detection-option {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .detection-option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .detection-option input:checked + label {
+            background-color: #60a5fa;
+            color: white;
+            border-color: #60a5fa;
+        }
+    </style>
+</head>
+<body class="bg-blue-50 min-h-screen flex items-center justify-center">
+    <div class="container mx-auto p-6 max-w-2xl">
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <h1 class="text-3xl font-bold text-center text-blue-900 mb-4 bg-blue-100 py-2 rounded-lg">VisionGuard AI</h1>
+            <p class="text-center text-gray-500 mb-8">Select a detection type and upload an image to identify faces, eyes, cars, or pedestrians.</p>
+
+            <form id="detectionForm" action="/detect" method="POST" enctype="multipart/form-data" class="space-y-6">
+                <!-- Detection Type Selection -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="detection-option">
+                        <input type="radio" name="detection_type" value="face" id="face" class="hidden" required>
+                        <label for="face" class="block p-4 border rounded-lg text-center cursor-pointer text-blue-800 hover:bg-blue-100">
+                            <svg class="w-8 h-8 mx-auto mb-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4a4 4 0 100 8 4 4 0 000-8zm0 10c-3.86 0-7 2.24-7 5v2h14v-2c0-2.76-3.14-5-7-5z"></path>
+                            </svg>
+                            Face Detection
+                        </label>
+                    </div>
+                    <div class="detection-option">
+                        <input type="radio" name="detection_type" value="eye" id="eye" class="hidden">
+                        <label for="eye" class="block p-4 border rounded-lg text-center cursor-pointer text-blue-800 hover:bg-blue-100">
+                            <svg class="w-8 h-8 mx-auto mb-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zm-3 8c-4.97 0-9-4.03-9-9s4.03-9 9-9 9 4.03 9 9c0 .83-.11 1.64-.32 2.42"></path>
+                            </svg>
+                            Eye Detection
+                        </label>
+                    </div>
+                    <div class="detection-option">
+                        <input type="radio" name="detection_type" value="car" id="car" class="hidden">
+                        <label for="car" class="block p-4 border rounded-lg text-center cursor-pointer text-blue-800 hover:bg-blue-100">
+                            <svg class="w-8 h-8 mx-auto mb-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13H5v4h14v-4zm-7 2v2m-4-2v2m8-2v2m-3-9l3-3-3-3m-6 6l-3-3 3-3"></path>
+                            </svg>
+                            Car Detection
+                        </label>
+                    </div>
+                    <div class="detection-option">
+                        <input type="radio" name="detection_type" value="pedestrian" id="pedestrian" class="hidden">
+                        <label for="pedestrian" class="block p-4 border rounded-lg text-center cursor-pointer text-blue-800 hover:bg-blue-100">
+                            <svg class="w-8 h-8 mx-auto mb-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4a2 2 0 100 4 2 2 0 000-4zm-1 6h2l1 10h-4l1-10z"></path>
+                            </svg>
+                            Pedestrian Detection
+                        </label>
+                    </div>
+                </div>
+
+                <!-- File Upload -->
+                <div class="flex items-center justify-center">
+                    <label class="w-full flex flex-col items-center px-4 py-6 bg-blue-50 text-blue-700 rounded-lg border border-dashed border-blue-300 cursor-pointer hover:bg-blue-100">
+                        <svg class="w-8 h-8 mb-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V8m0 0l-3 3m3-3l3 3m8 5v4m0 0h-4m4 0h4m-8-8v4m0 0h-4m4 0h4"></path>
+                        </svg>
+                        <span class="text-sm">Upload an image</span>
+                        <input type="file" name="image" accept="image/*" class="hidden" required>
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-center">
+                    <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:opacity-50" disabled>
+                        Run Detection
+                    </button>
+                </div>
+            </form>
+
+            <!-- Result Display -->
+            <div id="result" class="mt-6 hidden">
+                <h2 class="text-xl font-semibold text-blue-900 mb-4">Detection Result</h2>
+                <img id="outputImage" src="" alt="Detection Result" class="w-full rounded-lg shadow-md">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('detectionForm');
+        const submitButton = form.querySelector('button[type="submit"]');
+        const fileInput = form.querySelector('input[type="file"]');
+        const resultDiv = document.getElementById('result');
+        const outputImage = document.getElementById('outputImage');
+
+        // Enable submit button only when both detection type and file are selected
+        // Enable submit button only when both detection type and file are selected
+form.addEventListener('change', () => {
+    const detectionType = form.querySelector('input[name="detection_type"]:checked');
+    const fileSelected = fileInput.files.length > 0;
+    submitButton.disabled = !(detectionType && fileSelected);
+
+    // 🔄 Clear previous result when user changes detection or file
+    outputImage.src = '';
+    resultDiv.classList.add('hidden');
+});
+
+// Handle form submission
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submitButton.disabled = true;
+    submitButton.textContent = 'Processing...';
+
+    const formData = new FormData(form);
+    try {
+        const response = await fetch('/detect', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const imageUrl = URL.createObjectURL(blob);
+            // 🛠️ Add timestamp to bust cache
+            outputImage.src = imageUrl + '?t=' + new Date().getTime();
+            resultDiv.classList.remove('hidden');
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            alert('Error processing the image. Please try again.');
+        }
+    } catch (error) {
+        alert('An error occurred: ' + error.message);
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Run Detection';
+    }
+});
+    </script>
+</body>
+</html>
